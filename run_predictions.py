@@ -3,7 +3,7 @@ import numpy as np
 import json
 from PIL import Image
 
-def compute_convolution(I, T, stride=None):
+def compute_convolution(I, T, stride=None, padding=0):
     '''
     This function takes an image <I> and a template <T> (both numpy arrays) 
     and returns a heatmap where each grid represents the output produced by 
@@ -11,11 +11,26 @@ def compute_convolution(I, T, stride=None):
     window_size, padding) to create additional functionality. 
     '''
     (n_rows,n_cols,n_channels) = np.shape(I)
+    (f_height, f_width, f_channels) = np.shape(T)
+    assert n_channels == f_channels
 
     '''
     BEGIN YOUR CODE
     '''
-    heatmap = np.random.random((n_rows, n_cols))
+
+    heatmap = np.zeros(n_rows * n_cols)
+
+    # iterate over patches from images, with stride/padding
+
+    # for each patch, treat each channel
+    for channel in range(n_channels):
+        # flatten to vector
+        image_vector = I[:,:,channel].flatten()
+        filter_vector = T[:,:,channel].flatten()
+
+        np.convolve()
+
+    
 
     '''
     END YOUR CODE
@@ -65,7 +80,7 @@ def predict_boxes(heatmap):
     return output
 
 
-def detect_red_light_mf(I):
+def detect_red_light_mf(I, filters):
     '''
     This function takes a numpy array <I> and returns a list <output>.
     The length of <output> is the number of bounding boxes predicted for <I>. 
@@ -84,11 +99,19 @@ def detect_red_light_mf(I):
     '''
     BEGIN YOUR CODE
     '''
-    template_height = 8
-    template_width = 6
+    
 
     # You may use multiple stages and combine the results
-    T = np.random.random((template_height, template_width))
+    # template_height = 8
+    # template_width = 6
+    #T = np.random.random((template_height, template_width))
+
+    # version 1: use a single daylight filter
+    T = filters[2]
+
+    # version 2: use daylight/night filters + various sizes
+    #for T in filters:
+        # consolidate heatmaps
 
     heatmap = compute_convolution(I, T)
     output = predict_boxes(heatmap)
@@ -106,6 +129,15 @@ def detect_red_light_mf(I):
 # Note that you are not allowed to use test data for training.
 # set the path to the downloaded data:
 data_path = '../data/RedLights2011_Medium'
+
+# filter data used to detect red lights
+filter_path = './filters'
+filter_names = sorted(os.listdir(filter_path))
+filter_files = [os.path.join(filter_path,filter_name) for filter_name in filter_names]
+filters = [np.asarray(Image.open(f)) for f in filter_files]
+print(filter_names)
+print(filters[2].shape)
+quit()
 
 # load splits: 
 split_path = '../data/hw02_splits'
@@ -131,7 +163,7 @@ for i in range(len(file_names_train)):
     # convert to numpy array:
     I = np.asarray(I)
 
-    preds_train[file_names_train[i]] = detect_red_light_mf(I)
+    preds_train[file_names_train[i]] = detect_red_light_mf(I, filters)
 
 # save preds (overwrites any previous predictions!)
 with open(os.path.join(preds_path,'preds_train.json'),'w') as f:
